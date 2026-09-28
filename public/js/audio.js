@@ -150,26 +150,40 @@ class AudioEngine {
   }
 
   // ─── Metrónomo ─────────────────────────────────────────────────────────────
-  /** callback(beat, totalBeat) — se llama en cada pulso */
-  startMetronome(bpm, callback) {
+  /** callback(beat) — se llama en cada pulso */
+  startMetronome(bpm, callback, anchorTime = null) {
     this.stopMetronome();
     this._metroCallback  = callback;
-    this._metroBeat      = 0;
-    this._metroNextTime  = this.ctx.currentTime + 0.05;
-    const scheduleAhead  = 0.12; // segundos de anticipación
-    const interval       = 25;   // ms del scheduler loop
+    
+    let nextDelay = 0.05;
+    if (anchorTime) {
+      // Sincronizar la fase basándose en un tiempo absoluto compartido
+      const timeSinceAnchor = Date.now() - anchorTime;
+      const msPerBeat = 60000 / bpm;
+      if (timeSinceAnchor > 0) {
+        const elapsedBeatsExact = timeSinceAnchor / msPerBeat;
+        this._metroBeat = Math.ceil(elapsedBeatsExact);
+        const fraction = this._metroBeat - elapsedBeatsExact;
+        nextDelay = fraction * (msPerBeat / 1000);
+      } else {
+        this._metroBeat = 0;
+      }
+    } else {
+      this._metroBeat = 0;
+    }
+    
+    this._metroNextTime  = this.ctx.currentTime + nextDelay;
+    const scheduleAhead  = 0.12; 
+    const interval       = 25;   
 
     const tick = () => {
       const secPerBeat = 60 / bpm;
       while (this._metroNextTime < this.ctx.currentTime + scheduleAhead) {
-        // Click visual (no audio si no quieren)
         const beat = this._metroBeat;
         const schedTime = this._metroNextTime;
 
-        // Programar beep de metrónomo
         this._scheduleClick(schedTime, beat % 4 === 0);
 
-        // Callback visual
         const delay = (schedTime - this.ctx.currentTime) * 1000;
         setTimeout(() => { if (this._metroCallback) this._metroCallback(beat); }, Math.max(0, delay));
 

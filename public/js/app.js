@@ -358,11 +358,11 @@ function initRealtimeEvents() {
   });
 
   // ── Metrónomo ─────────────────────────────────────────────────────────────────
-  realtime.on('metronome_update', ({ bpm, isPlaying }) => {
+  realtime.on('metronome_update', ({ bpm, isPlaying, serverTime }) => {
     S.metroBpm     = bpm;
     S.metroPlaying = isPlaying;
     updateBpmDisplay(bpm);
-    if (isPlaying) startMetronomeLocal(bpm);
+    if (isPlaying) startMetronomeLocal(bpm, serverTime);
     else           stopMetronomeLocal();
   });
 
@@ -765,13 +765,12 @@ function updateDeviceInfoPanel() {
 }
 
 // ─── Metrónomo ────────────────────────────────────────────────────────────────
-function startMetronomeLocal(bpm) {
+function startMetronomeLocal(bpm, anchorTime = null) {
   S.metroPlaying = true;
-  S.metroBeat    = 0;
   audioEngine.startMetronome(bpm, (beat) => {
     S.metroBeat = beat;
     updateBeatDots(beat % 4);
-  });
+  }, anchorTime);
 }
 
 function stopMetronomeLocal() {
