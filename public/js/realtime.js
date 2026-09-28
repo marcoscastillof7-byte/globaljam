@@ -122,7 +122,12 @@ class RealtimeManager {
       case 'rtc_ice':         return this._bcast('rtc_ice',    { ...data, from: this.userId });
       case 'midi_event':      return this._sendMidi(data);
       case 'chat_message':    return this._sendChat(data);
-      case 'set_metronome':   return this._bcast('metronome_update', { ...data, serverTime: Date.now(), from: this.userId });
+      case 'set_metronome': {
+        const payload = { ...data, serverTime: Date.now(), from: this.userId };
+        this._bcast('metronome_update', payload);
+        this._fire('metronome_update', payload); // Ejecutar localmente también
+        return;
+      }
       case 'channel_update':  return this._bcast('channel_update', { ...data, userId: this.userId });
       case 'report_latency':  return this._bcast('user_latency',   { ...data, userId: this.userId });
       case 'update_user':     return this._updatePresence(data);
@@ -314,7 +319,9 @@ class RealtimeManager {
     Object.assign(this._myInfo, info);
     if (this.channel) {
       await this.channel.track(this._myInfo);
-      await this._bcast('user_updated', { ...this._myInfo, id: this.userId });
+      const payload = { ...this._myInfo, id: this.userId };
+      await this._bcast('user_updated', payload);
+      this._fire('user_updated', payload);
     }
   }
 
