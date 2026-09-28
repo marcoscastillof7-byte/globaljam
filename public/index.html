@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🎚 GlobalJam Studio — Colaboración Musical Global</title>
+  <meta name="description" content="Conecta tu instrumento físico y toca en tiempo real con músicos de todo el mundo" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎚</text></svg>" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     SETUP SCREEN — Configuración de dispositivos y sala
+     ════════════════════════════════════════════════════════════════════ -->
+<div id="setup-screen">
+
+  <div class="setup-logo">🎚 GlobalJam Studio</div>
+  <p class="setup-tagline">Conecta tu instrumento físico · Toca con músicos de todo el mundo · Sin lag</p>
+
+  <div class="setup-grid">
+
+    <!-- Tu perfil -->
+    <div class="setup-card">
+      <div class="card-title"><span class="dot"></span>Tu perfil</div>
+      <div class="form-row">
+        <label>Nombre artístico</label>
+        <input id="user-name" type="text" placeholder="Ej: DJ Marco, La Negra…" maxlength="30" />
+      </div>
+      <div class="form-row">
+        <label>Instrumento</label>
+        <select id="user-instrument">
+          <optgroup label="Percusión">
+            <option value="Batería">🥁 Batería</option>
+            <option value="Congas / Bongós">🪘 Congas / Bongós</option>
+            <option value="Cajón">🪵 Cajón</option>
+          </optgroup>
+          <optgroup label="Cuerdas">
+            <option value="Guitarra Eléctrica">🎸 Guitarra Eléctrica</option>
+            <option value="Guitarra Acústica">🪕 Guitarra Acústica</option>
+            <option value="Bajo">🎸 Bajo</option>
+            <option value="Violín">🎻 Violín</option>
+          </optgroup>
+          <optgroup label="Teclado / MIDI">
+            <option value="Piano / Teclado">🎹 Piano / Teclado</option>
+            <option value="Sintetizador">🎛 Sintetizador</option>
+            <option value="Órgano">🎹 Órgano</option>
+          </optgroup>
+          <optgroup label="Viento">
+            <option value="Saxofón">🎷 Saxofón</option>
+            <option value="Trompeta">🎺 Trompeta</option>
+            <option value="Flauta">🪈 Flauta</option>
+          </optgroup>
+          <optgroup label="Voz">
+            <option value="Voz / Cantante">🎤 Voz / Cantante</option>
+          </optgroup>
+          <option value="Otro instrumento">🎵 Otro</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Tu color en la consola</label>
+        <input id="user-color" type="color" value="#6366f1"
+               style="height:38px;width:100%;cursor:pointer;border-radius:var(--r-sm);background:var(--strip);border:1px solid var(--border);" />
+      </div>
+    </div>
+
+
+    <!-- Dispositivo de audio -->
+    <div class="setup-card">
+      <div class="card-title"><span class="dot" style="background:var(--green)"></span>Entrada de audio</div>
+
+      <!-- Selector de modo -->
+      <div style="display:flex;gap:6px;margin-bottom:.85rem;">
+        <button id="mode-mic-btn"
+          onclick="setAudioMode('microphone')"
+          style="flex:1;padding:.5rem;border-radius:var(--r-sm);border:2px solid var(--border);
+                 background:var(--strip);color:var(--text-dim);cursor:pointer;font-size:.8rem;
+                 font-family:var(--font);font-weight:600;transition:all .15s;"
+          title="Activa cancelación de eco y reducción de ruido — ideal para hablar">
+          🎤 Micrófono / Voz
+        </button>
+        <button id="mode-inst-btn"
+          onclick="setAudioMode('instrument')"
+          style="flex:1;padding:.5rem;border-radius:var(--r-sm);border:2px solid var(--accent);
+                 background:rgba(99,102,241,.15);color:var(--accent2);cursor:pointer;font-size:.8rem;
+                 font-family:var(--font);font-weight:600;transition:all .15s;"
+          title="Sin filtros — preserva el tono real de tu instrumento">
+          🎸 Instrumento
+        </button>
+      </div>
+      <div id="mode-hint" style="font-size:.72rem;color:var(--text-muted);margin-bottom:.75rem;line-height:1.5;background:var(--panel);border-radius:var(--r-sm);padding:.45rem .6rem;">
+        🎸 <strong>Modo instrumento:</strong> Sin cancelación de eco ni reducción de ruido — el audio llega limpio y sin alteraciones.
+      </div>
+
+      <div class="form-row">
+        <label>Dispositivo de entrada</label>
+        <div class="device-select-wrap">
+          <select id="audio-device-select">
+            <option value="">— Sin audio (solo escuchar) —</option>
+          </select>
+          <div class="device-status" id="audio-status-dot"></div>
+        </div>
+      </div>
+
+      <!-- VU test meter -->
+      <div class="vu-test" style="margin-bottom:.3rem;">
+        <div class="vu-test-fill" id="vu-test-fill"></div>
+      </div>
+      <div id="vu-hint" style="font-size:.68rem;color:var(--text-muted);margin-bottom:.6rem;">
+        Selecciona un dispositivo y habla / toca para ver el nivel ↑
+      </div>
+
+      <div style="display:flex;gap:.5rem;">
+        <button class="btn btn-secondary btn-sm" id="btn-test-audio" style="flex:1;">▶ Probar</button>
+        <button class="btn btn-secondary btn-sm" onclick="loadAudioDevices()" style="flex:1;">↺ Actualizar</button>
+      </div>
+    </div>
+
+
+    <!-- Dispositivos MIDI -->
+    <div class="setup-card">
+      <div class="card-title"><span class="dot" style="background:var(--cyan)"></span>Dispositivos MIDI</div>
+      <p style="font-size:.78rem;color:var(--text-dim);margin-bottom:.75rem;line-height:1.5;">
+        Si tienes un <strong>teclado MIDI, controlador o caja de ritmos</strong> con cable USB o DIN, aparecerá aquí. Haz clic para seleccionarlo.
+      </p>
+      <div id="midi-device-list" class="midi-device-list">
+        <div class="no-midi">Detectando dispositivos MIDI…</div>
+      </div>
+      <div style="margin-top:.6rem;font-size:.72rem;color:var(--text-muted);">
+        💡 Conecta el cable MIDI/USB antes de abrir la página para detección automática.
+      </div>
+    </div>
+
+    <!-- Sala -->
+    <div class="setup-card">
+      <div class="card-title"><span class="dot" style="background:var(--yellow)"></span>Sala de jam</div>
+      <div class="form-row">
+        <label>Crear sala nueva</label>
+        <input id="room-name-input" type="text" placeholder="Ej: Jam del Viernes, Reggaeton Session…" maxlength="40" />
+      </div>
+      <button id="btn-create-room" class="btn btn-secondary btn-full" style="margin-bottom:.75rem;">+ Crear sala</button>
+
+      <div style="text-align:center;font-size:.72rem;color:var(--text-muted);margin:.5rem 0;">— o entra a una existente —</div>
+
+      <div class="form-row">
+        <label>Código de sala</label>
+        <input id="room-code-join" type="text" placeholder="ABC123" maxlength="8"
+               style="font-family:var(--mono);letter-spacing:3px;text-transform:uppercase;" />
+      </div>
+      <button id="btn-join-room" class="btn btn-green btn-full">🚀 Entrar a sala</button>
+    </div>
+
+    <!-- Salas activas -->
+    <div class="setup-card full">
+      <div class="card-title"><span class="dot" style="background:var(--orange)"></span>Salas activas ahora</div>
+      <div id="rooms-list" class="rooms-list">
+        <div class="no-midi">Conectando…</div>
+      </div>
+    </div>
+
+  </div><!-- /setup-grid -->
+
+  <!-- Información técnica -->
+  <div style="margin-top:1.5rem;max-width:780px;display:flex;flex-wrap:wrap;gap:.75rem;justify-content:center;">
+    <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:.75rem 1rem;text-align:center;min-width:140px;">
+      <div style="font-size:1.5rem">🔌</div>
+      <div style="font-weight:700;font-size:.82rem;margin:.2rem 0">Audio real</div>
+      <div style="font-size:.7rem;color:var(--text-dim)">Interfaz de audio, DI, micrófono</div>
+    </div>
+    <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:.75rem 1rem;text-align:center;min-width:140px;">
+      <div style="font-size:1.5rem">🎹</div>
+      <div style="font-weight:700;font-size:.82rem;margin:.2rem 0">MIDI completo</div>
+      <div style="font-size:.7rem;color:var(--text-dim)">USB MIDI, DIN 5-pin, BLE MIDI</div>
+    </div>
+    <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:.75rem 1rem;text-align:center;min-width:140px;">
+      <div style="font-size:1.5rem">⚡</div>
+      <div style="font-weight:700;font-size:.82rem;margin:.2rem 0">P2P directo</div>
+      <div style="font-size:.7rem;color:var(--text-dim)">WebRTC — audio sin pasar por servidor</div>
+    </div>
+    <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:.75rem 1rem;text-align:center;min-width:140px;">
+      <div style="font-size:1.5rem">🎚</div>
+      <div style="font-weight:700;font-size:.82rem;margin:.2rem 0">Consola de mezclas</div>
+      <div style="font-size:.7rem;color:var(--text-dim)">EQ, ganancia, pan, compresor</div>
+    </div>
+  </div>
+
+</div><!-- /#setup-screen -->
+
+
+<!-- ════════════════════════════════════════════════════════════════════
+     STUDIO SCREEN — Consola de mezclas en vivo
+     ════════════════════════════════════════════════════════════════════ -->
+<div id="studio-screen" class="hidden">
+
+  <!-- Header bar -->
+  <header class="studio-header">
+    <div class="studio-logo">🎚 GlobalJam</div>
+
+    <div class="header-room">
+      <div class="conn-dot" id="conn-dot"></div>
+      <span id="header-room-name">—</span>
+      &nbsp;|&nbsp;
+      Código:
+      <div class="header-code" id="header-room-code" onclick="copyCode()" title="Clic para copiar código">—</div>
+      <button class="btn btn-sm btn-secondary" onclick="copyLink()" title="Copiar link de invitación">🔗</button>
+      <span id="share-link-hidden" style="display:none"></span>
+    </div>
+
+    <div class="header-right">
+      <div class="latency-tag" id="latency-badge">—ms</div>
+      <button class="btn btn-sm btn-danger" onclick="leaveRoom()">✕ Salir</button>
+    </div>
+  </header>
+
+  <!-- Body -->
+  <div class="studio-body">
+
+    <!-- ── Left panel: músicos + info de dispositivo ──────────────────── -->
+    <aside class="left-panel">
+
+      <div class="lpanel-section">
+        <div class="lpanel-title">🎸 Músicos conectados</div>
+        <div id="musicians-list" class="musicians-list">
+          <!-- Llenado dinámicamente -->
+        </div>
+      </div>
+
+      <div class="lpanel-section" style="flex:1;overflow-y:auto;">
+        <div class="lpanel-title">🔌 Tus dispositivos</div>
+        <div id="device-info-panel">
+          <!-- Llenado dinámicamente -->
+        </div>
+        <div style="margin-top:.75rem;">
+          <div class="lpanel-title">⚙ Herramientas</div>
+          <div style="display:flex;flex-direction:column;gap:.4rem;margin-top:.4rem;">
+            <button class="btn btn-secondary btn-sm" onclick="toggleFullscreen()">⛶ Pantalla completa</button>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ── Mixer console ──────────────────────────────────────────────── -->
+    <main class="mixer-console">
+
+      <div class="mixer-header">
+        <span style="font-size:.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">
+          CONSOLA DE MEZCLAS EN VIVO
+        </span>
+        <span style="margin-left:auto;font-size:.7rem;">
+          ← Desplaza para ver todos los canales →
+        </span>
+      </div>
+
+      <!-- Channel strips -->
+      <div class="channels-wrapper" id="channels-container">
+        <!-- Generado dinámicamente por app.js -->
+      </div>
+
+    </main>
+
+    <!-- ── Right panel: MIDI monitor + chat ──────────────────────────── -->
+    <aside class="right-panel">
+
+      <!-- MIDI Monitor -->
+      <div class="midi-monitor">
+        <div class="midi-monitor-header">
+          <div class="midi-monitor-title">🎹 MIDI Monitor</div>
+          <div class="midi-active-dot" id="midi-active-dot"></div>
+        </div>
+        <div id="midi-log-list" class="midi-log-list">
+          <div class="midi-log-item" style="color:var(--text-muted);">Esperando eventos MIDI…</div>
+        </div>
+      </div>
+
+      <!-- Chat -->
+      <div class="chat-area">
+        <div class="chat-header">💬 Chat de la sala</div>
+        <div class="chat-messages" id="chat-messages">
+          <div class="chat-msg">
+            <div class="chat-msg-name" style="color:var(--accent2)">GlobalJam Studio</div>
+            <div class="chat-msg-text">
+              ¡Bienvenido! Conecta tu instrumento físico y comienza a tocar. El audio va directo entre los músicos (P2P) para la menor latencia posible. 🎸
+            </div>
+          </div>
+        </div>
+        <div class="chat-input-row">
+          <input class="chat-input" id="chat-input" type="text" placeholder="Mensaje a la sala…" maxlength="300" />
+          <button class="chat-send" id="chat-send">➤</button>
+        </div>
+      </div>
+
+    </aside>
+
+  </div><!-- /studio-body -->
+
+  <!-- ── Transport / Metrónomo ─────────────────────────────────────── -->
+  <footer class="transport-bar">
+
+    <!-- Play/Stop metrónomo -->
+    <button class="metro-btn play" id="metro-btn" onclick="transportMetro.toggle()" title="Play/Stop metrónomo (Espacio)">▶</button>
+
+    <!-- BPM -->
+    <div class="bpm-display">
+      <span class="bpm-label">BPM</span>
+      <button class="bpm-btn" onclick="transportMetro.bpmDown()">−</button>
+      <span class="bpm-val" id="bpm-val">120</span>
+      <button class="bpm-btn" onclick="transportMetro.bpmUp()">+</button>
+      <input id="bpm-slider" type="range" min="20" max="300" value="120" step="1"
+             style="-webkit-appearance:none;width:80px;height:3px;background:var(--border2);border-radius:2px;cursor:pointer;outline:none;"
+             oninput="transportMetro.bpmSet(this.value)" />
+    </div>
+
+    <!-- Beat dots (4/4) -->
+    <div class="beat-dots">
+      <div class="beat-dot"></div>
+      <div class="beat-dot"></div>
+      <div class="beat-dot"></div>
+      <div class="beat-dot"></div>
+    </div>
+
+    <!-- Info -->
+    <span style="font-size:.68rem;color:var(--text-muted);margin-left:.5rem;">
+      ⌨ [Espacio] metro · [↑↓] BPM
+    </span>
+
+    <!-- Master volume -->
+    <div class="master-vol-wrap">
+      <span class="master-vol-label">MASTER</span>
+      <input type="range" class="master-vol" min="0" max="1.5" step="0.01" value="0.9"
+             oninput="audioEngine.setMasterGain(parseFloat(this.value))" />
+    </div>
+
+  </footer>
+
+</div><!-- /#studio-screen -->
+
+<!-- Toasts -->
+<div id="toasts"></div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/config.js"></script>
+<script src="/js/realtime.js"></script>
+<script src="/js/midi.js"></script>
+<script src="/js/audio.js"></script>
+<script src="/js/rtc.js"></script>
+<script src="/js/app.js"></script>
+
+<script>
+  // Metrónomo: actualizar botón según estado
+  const origToggle = window.transportMetro?.toggle;
+  document.addEventListener('DOMContentLoaded', () => {
+    // Parchear toggle para actualizar el botón
+    const btn = document.getElementById('metro-btn');
+    const origBpmSet = transportMetro.bpmSet.bind(transportMetro);
+    transportMetro.bpmSet = (v) => {
+      origBpmSet(v);
+      document.getElementById('bpm-val').textContent = Math.max(20, Math.min(300, parseInt(v)));
+    };
+  });
+
+  // Escuchar cambios de metrónomo para actualizar botón
+  document.addEventListener('DOMContentLoaded', () => {
+    const origStop = window.stopMetronomeLocal;
+    const origStart = window.startMetronomeLocal;
+  });
+
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+    else document.exitFullscreen?.();
+  }
+
+  // Monkeypatch: actualizar botón play cuando cambia el metrónomo
+  const _origMetroUpdate = window.updateBpmDisplay;
+  window._updateMetroBtn = function(playing) {
+    const btn = document.getElementById('metro-btn');
+    if (btn) {
+      btn.textContent = playing ? '⏹' : '▶';
+      btn.className   = `metro-btn ${playing ? 'stop' : 'play'}`;
+    }
+  };
+</script>
+
+<!-- Escuchar cambio de estado metrónomo para actualizar botón -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const origStart = window.startMetronomeLocal;
+  const origStop  = window.stopMetronomeLocal;
+  window.startMetronomeLocal = function(bpm) {
+    origStart?.(bpm);
+    window._updateMetroBtn?.(true);
+  };
+  window.stopMetronomeLocal = function() {
+    origStop?.();
+    window._updateMetroBtn?.(false);
+  };
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,101 @@
+# ═══════════════════════════════════════════════════════════════════════
+#  GlobalJam Studio — GitHub Actions CI/CD
+#
+#  Pipeline:
+#  1. Cada push a `main` → deploy a producción en Netlify
+#  2. Cada Pull Request → deploy de preview en Netlify
+#  3. Verifica que el health check responda OK
+#
+#  Secretos requeridos en GitHub (Settings → Secrets → Actions):
+#    • NETLIFY_AUTH_TOKEN  — token de Netlify (User settings → Applications)
+#    • NETLIFY_SITE_ID     — ID del sitio en Netlify (Site settings → General)
+#    • SUPABASE_URL        — URL del proyecto Supabase
+#    • SUPABASE_ANON_KEY   — Clave anónima pública de Supabase
+# ═══════════════════════════════════════════════════════════════════════
+
+name: 🚀 Deploy GlobalJam Studio
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Deploy ───────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy a Netlify
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout código
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 📦 Instalar dependencias
+        run: npm ci --omit=dev
+
+      - name: ⚙️ Generar config.js con credenciales de Supabase
+        env:
+          SUPABASE_URL:      ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: node scripts/inject-config.js
+
+      - name: 🚀 Deploy a Netlify (Producción)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: nwtgck/actions-netlify@v3
+        with:
+          publish-dir:      './public'
+          functions-dir:    './netlify/functions'
+          production-deploy: true
+          deploy-message:   "Deploy #${{ github.run_number }} — ${{ github.sha }}"
+          github-token:     ${{ secrets.GITHUB_TOKEN }}
+          enable-commit-comment: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID:    ${{ secrets.NETLIFY_SITE_ID }}
+        timeout-minutes: 5
+
+      - name: 🔍 Deploy Preview (Pull Requests)
+        if: github.event_name == 'pull_request'
+        uses: nwtgck/actions-netlify@v3
+        with:
+          publish-dir:    './public'
+          functions-dir:  './netlify/functions'
+          production-deploy: false
+          deploy-message: "PR #${{ github.event.pull_request.number }} — ${{ github.sha }}"
+          github-token:   ${{ secrets.GITHUB_TOKEN }}
+          enable-pull-request-comment: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID:    ${{ secrets.NETLIFY_SITE_ID }}
+        timeout-minutes: 5
+
+  # ── Health Check post-deploy ──────────────────────────────────────────
+  health-check:
+    name: ✅ Verificar deploy
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: ⏳ Esperar 10s para que propague
+        run: sleep 10
+
+      - name: 🏥 Health check
+        run: |
+          SITE_URL="${{ secrets.NETLIFY_SITE_URL }}"
+          if [ -n "$SITE_URL" ]; then
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$SITE_URL/api/health")
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Health check OK ($STATUS)"
+            else
+              echo "⚠️ Health check status: $STATUS"
+            fi
+          else
+            echo "ℹ️ NETLIFY_SITE_URL no configurado — skip health check"
+          fi

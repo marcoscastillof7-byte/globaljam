@@ -1,0 +1,29 @@
+# ── Dependencias del proyecto ────────────────────
+node_modules/
+
+# ── Variables de entorno locales ─────────────────
+.env
+.env.local
+.env.development.local
+.env.production.local
+
+# ── Netlify ───────────────────────────────────────
+.netlify/
+
+# ── Supabase CLI ──────────────────────────────────
+supabase/.temp/
+
+# ── Editores ──────────────────────────────────────
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Sistema operativo ─────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Logs ──────────────────────────────────────────
+*.log
+npm-debug.log*

@@ -1,0 +1,10 @@
+const fs = require('fs');
+let code = fs.readFileSync('public/js/app.js', 'utf8');
+code = code.replace(/socket\.connected/g, 'realtime.connected');
+code = code.replace(/socket\.emit\('ping'/g, "realtime.send('ping'");
+code = code.replace(/socket\.once\('pong'/g, "realtime.once('pong'");
+code = code.replace(/socket\.emit\('report_latency'/g, "realtime.send('report_latency'");
+code = code.replace(/socket\.emit\('leave_room'\);/g, "realtime.leaveRoom();");
+code = code.replace(/socket\.disconnect\(\);/g, "");
+code = code.replace(/socket\.connect\(\);/g, "");
+fs.writeFileSync('public/js/app.js', code);

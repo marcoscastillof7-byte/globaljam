@@ -1,0 +1,53 @@
+# ═══════════════════════════════════════════════════════════════
+# GlobalJam Studio — Configuración de Netlify
+# ═══════════════════════════════════════════════════════════════
+
+[build]
+  # Directorio de archivos estáticos a publicar
+  publish = "public"
+  # Script de build: inyecta las variables de entorno en config.js
+  command = "node scripts/inject-config.js"
+
+[functions]
+  # Funciones serverless de Netlify (health check, etc.)
+  directory = "netlify/functions"
+
+# Redirigir todo al index.html (SPA — Single Page App)
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
+
+# Headers de seguridad y performance
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options           = "DENY"
+    X-XSS-Protection          = "1; mode=block"
+    X-Content-Type-Options    = "nosniff"
+    Referrer-Policy           = "strict-origin-when-cross-origin"
+    Permissions-Policy        = "microphone=*, midi=*"
+    # HSTS (solo HTTPS)
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+
+# Cache para assets estáticos
+[[headers]]
+  for = "/css/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"  # 7 días
+
+[[headers]]
+  for = "/js/config.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store"      # Siempre fresco (tiene credenciales)
+
+# Variables de entorno (definidas en Netlify UI o aquí para preview)
+# IMPORTANTE: SUPABASE_URL y SUPABASE_ANON_KEY se definen en:
+#   Netlify → Site settings → Environment variables
+# NO las pongas aquí en texto plano
+
+[context.production.environment]
+  NODE_ENV = "production"
+
+[context.deploy-preview.environment]
+  NODE_ENV = "preview"
